@@ -1,0 +1,1244 @@
+/*
+ * ver 20170706
+ */
+"use strict";
+
+$.fn.fmc_exists = function () {
+    return (this.length !== 0);
+}
+
+var fmc = fmc || {};
+
+$('body').bind('form.validation', function (e, ret) {
+    fmc.handleValidation(ret.formId, ret.msg);
+});
+
+$('body').bind('form.completed', function (e, ret) {
+    fmc.handleCompleted(ret.action);
+});
+
+
+
+fmc.isFileUploading = function (formId, ctrlIds) {
+
+    var isUploading = false;
+
+    $.each(ctrlIds, function (index, ctrl) {
+        var id = ctrl['id'];
+        var type = $("#" + formId).find("#" + id).data("type");
+
+        switch (type) {
+            case "file":
+                var ctrl = $("#" + formId).find("#" + id).find(".js-file-file");
+                isUploading |= ctrl.is(':disabled');
+            default:
+        }
+    });
+
+    return isUploading;
+}
+
+fmc.messageLinkHandler = function (formId, id) {
+    if ($('[id="' + id + '"]').length > 1) {
+        var nid = formId + '-' + id;
+        if ($('#' + nid).length == 0) {
+            $('#' + formId + ' #' + id).append('<div id="' + nid + '"></div>');
+        }
+        location.hash = "#" + nid;
+    }
+    else {
+        location.hash = "#" + id;
+    }
+}
+
+fmc.handleValidation = function (formId, msg) {
+    msg = msg || {};
+
+    // var form = $("#" + formId);
+    var formError = $("#" + formId).find("[data-role='form-validation']");
+    formError.remove();
+
+
+    // $("#" + formId).find(".form-group").each(function() {
+    //     var group = $(this);
+    //     var error = group.find("[data-role='validation']");
+
+    //     group.removeClass("has-error has-danger");
+    //     error.remove();
+    // });
+    fmc.clearErrorMessage(formId);
+
+    $("#" + formId).triggerHandler('form.validation.fail');
+
+    var errorNum = Object.keys(msg).length;
+    var formError = $("#" + formId).find("[data-role='form-validation']");
+    if (formError.length === 0) {
+        formError = $("<div></div>").attr({
+            'class': "fs-form-message",
+            'data-role': "form-validation"
+        });
+
+        $("#" + formId).prepend(formError);
+    }
+
+    formError.html("<div>" + errorNum + " " + _T("errorCount") + "</div>");
+
+    $.each(msg, function (i, m) {
+
+        if (m.id == formId) {
+            formError.append("<div>" + m.msg + "</div>");
+            return;
+        }
+
+        var that = $("#" + formId).find("#" + m.id);
+        var group = that.closest(".form-group");
+        var error = group.find("[data-role='validation']");
+
+        if (error.length === 0) {
+
+            error = $("<div></div>").attr({
+                'class': "help-block with-errors",
+                'data-role': "validation"
+            });
+
+            group.find(".fs-form-control").append(error);
+            group.addClass("has-error has-danger");
+        }
+
+        error.append("<div>" + m.msg + "</div>");
+
+        var label = group.find('label.control-label').text().trim();
+        if (label == '') {
+            // placeholder
+            if (group.find('[name="' + m.id + '"]').length == 1) {
+                label = group.find('[name="' + m.id + '"]').prop('placeholder').trim();
+            }
+        }
+        if (label == '') {
+            label = m.id;
+        }
+        label = fs.escapeHtml(label);
+        formError.append("<a class='fs-form-message-link' onclick=fmc.messageLinkHandler('" + formId + "','" + m.id + "') >\
+            <div class='col-xs-6'>" + label + "</div>\
+            <div class='col-xs-6 text-overflow'>" + $('<p>' + m.msg + '</p>').text() + "</div>\
+        </a>");
+        location.hash = "#";
+    });
+    formError.append('<div class="clearfix"></div>');
+
+    if (parent == self) {
+        // not iframe
+        var modalScrollDiv = $('.modal.fade.in');
+        if (modalScrollDiv.length > 0) {
+            // modal
+            modalScrollDiv.animate({ scrollTop: 0 }, 'slow');
+        }
+        else {
+            $('html,body').animate({ scrollTop: $("#" + formId).offset().top }, 'slow');
+        }
+    }
+    else {
+        try {
+            $('html,body').animate({ scrollTop: $("#" + formId).offset().top }, 'slow');
+            parent.$('.modal.fade.in').animate({ scrollTop: 0 }, 'slow');
+        }
+        catch (e) { }
+    }
+
+}
+
+fmc.handleCompleted = function (action) {
+
+    action = action || {};
+
+    // alert
+    $(action.alert).each(function (idx, val) {
+        alert(val);
+    });
+
+    // confirm
+    var confirm_flag = false;
+
+    $(action.confirm).each(function (idx, val) {
+        if (!confirm(val)) {
+            confirm_flag = true;
+            return;
+        }
+    });
+
+    if (confirm_flag) return;
+    if (action.close) {
+        window.close();
+        return;
+    } else if (action.redir) {
+
+        if (action.redir == 'parentReload') {
+            parent.window.location.reload(true);
+            return;
+        } else if (action.redir == 'closeModal') {
+            parent.fs.ui.closeJModal();
+        } else {
+            window.location.href = action.redir;
+
+            /* reload current page with anchor hash */
+            if (action.redir.charAt(0) === '#') {
+                window.location.reload();
+            }
+        }
+
+    } else if (action.parentReload) {
+        parent.window.location.reload(true);
+        return;
+    } else if (action.parentUrl) {
+
+        /* reload current page with anchor hash */
+        if (action.parentUrl.charAt(0) === '#') {
+            parent.window.location.href = parent.window.location.href.split('#')[0] + action.parentUrl;
+            parent.window.location.reload();
+        }
+        else {
+            parent.window.location.href = action.parentUrl;
+        }
+
+    } else if (action.closeModal) {
+        parent.fs.ui.closeJModal();
+        return;
+    } else if (action.reload) {
+        window.location.reload(true);
+        return;
+    } else if (action.customJs) {
+        var scriptblock = document.createElement("script");
+        if (fs.util.ua().isIE8) {
+            scriptblock.text = action.customJs;
+        }
+        else {
+            scriptblock.innerHTML = action.customJs;
+        }
+        document.getElementsByTagName("body")[0].appendChild(scriptblock);
+    } else if (action.customParentJs) {
+        parent.fs.loadJsScript([action.customParentJs]);
+    } else if (action.blankAndParentReload) {
+        parent.window.location.reload(true);
+        window.open(action.blankAndParentReload);
+    } else {
+        window.location.reload();
+    }
+}
+
+
+
+fmc.clearErrorMessage = function (formId) {
+    var ctrls = (formId === undefined) ? $(".form-group") : $("#" + formId).find(".form-group"),
+        formMsg = (formId === undefined) ? $(".fs-form-message[data-role=form-validation]") : $("#" + formId + " .fs-form-message[data-role=form-validation]")
+
+    ctrls.each(function () {
+        $(this).removeClass("has-error has-danger");
+        $(this).find("[data-role='validation']").remove();
+    });
+
+    formMsg.each(function () {
+        $(this).remove();
+    });
+}
+
+
+
+
+// tcsu, 2017/09/03
+fmc.getValue = function (id) {
+    var type = $("#" + id).data("type");
+    switch (type) {
+        case "hidden":
+        case "text":
+        case "email":
+        case "password":
+        case "number":
+        case "textarea":
+        case "color":
+        case "image":
+        case "rating":
+            return fmc.getInput2(id);
+    }
+}
+
+fmc.setValue = function (id, value, formId) {
+    var type = $("#" + id).data("type");
+    switch (type) {
+        case "hidden":
+        case "text":
+        case "email":
+        case "password":
+        case "number":
+        case "textarea":
+        case "color":
+        case "image":
+        case "rating":
+            return fmc.setInput2(id, value, formId);
+        case "select":
+            return fmc.setSelect(id, value, formId);
+        case "select2":
+            return fmc.setSelect2(id, value, formId);
+        case "html":
+            return fmc.setHtml(id, value, formId);
+        case "datepicker":
+            return fmc.setDatepicker(id, value, formId);
+        case "radios":
+            return fmc.setRadio(id, value, formId);
+    }
+}
+
+fmc.getInput2 = function (id) {
+    return $("#" + id).find("[name=" + id + "]").val();
+}
+fmc.setInput2 = function (id, value, formId) {
+    var ctrl = (formId == undefined)
+        ? $("#" + id)
+        : $("#" + formId + ' #' + id)
+    ctrl.find("[name=" + id + "]").val(value);
+}
+fmc.setSelect = function (id, value, formId) {
+    var ctrl = (formId == undefined)
+        ? $("#" + id)
+        : $("#" + formId + ' #' + id)
+    ctrl.find("select").val(value);
+}
+
+fmc.setSelect2 = function (ctrlId, data, formId) {
+    var multiple = (formId == undefined)
+        ? $('#' + ctrlId + " select").attr('multiple')
+        : $('#' + formId + ' #' + ctrlId + " select").attr('multiple');
+    var name = (multiple == 'multiple')
+        ? ctrlId + '[]'
+        : ctrlId;
+    var select2Ctrl = (formId == undefined)
+        ? $('#' + ctrlId + " select[name='" + name + "']")
+        : $('#' + formId + ' #' + ctrlId + " select[name='" + name + "']");
+
+    if (Array.isArray(data)) {
+        var selectVals = [];
+        data.forEach(function (val) {
+            if (select2Ctrl.find("option[value='" + val.id + "']").length == 0) {
+                var newOption = new Option(val.text, val.id);
+                select2Ctrl.append(newOption);
+            }
+
+            selectVals.push(val.id);
+        });
+
+        select2Ctrl.val(selectVals);
+    } else {
+        if (select2Ctrl.find("option[value='" + data.id + "']").length == 0) {
+            var newOption = new Option(data.text, data.id);
+            select2Ctrl.append(newOption);
+        }
+
+        select2Ctrl.val(data.id);
+    }
+
+    select2Ctrl.trigger('change');
+}
+fmc.setHtml = function (id, value, formId) {
+    var ctrl = (formId == undefined)
+        ? $("#" + id)
+        : $("#" + formId + ' #' + id)
+    ctrl.find("[name=" + id + "]").html(value);
+}
+fmc.setDatepicker = function (id, value, formId) {
+    var ctrl = (formId == undefined)
+        ? $("#" + id)
+        : $("#" + formId + ' #' + id)
+    ctrl.find("[name=" + id + "_date]").val(value);
+}
+fmc.setRadio = function (id, value, formId) {
+    var ctrl = (formId == undefined)
+        ? $("#" + id + " input[name=" + id + "][value=" + value + "]")
+        : $("#" + formId + ' #' + id + " input[name=" + id + "][value=" + value + "]")
+    ctrl.trigger('click');
+}
+
+
+
+
+
+
+
+
+fmc.getValues = function (formId, ctrlIds) {
+    var values = {};
+
+    $.each(ctrlIds, function (index, ctrl) {
+        var id = ctrl['id'];
+        var value = fmc.getValueById(formId, ctrl);
+        values[id] = value;
+    });
+
+    return values;
+}
+
+fmc.getValueById = function (formId, ctrl) {
+    var id = ctrl['id'];
+    var type = $("#" + formId).find("#" + id).data("type");
+    switch (type) {
+        case "hidden":
+        case "text":
+        case "email":
+        case "password":
+        case "number":
+        case "textarea":
+        case "color":
+        case "image":
+        case "rating":
+        case "slider":
+            return fmc.getInput(formId, id);
+        case "input_range":
+            return fmc.getInputRange(formId, id);
+        case "select":
+            return fmc.getSelect(formId, id);
+        case "radios":
+            return fmc.getRadios(formId, id);
+        case "checkboxes":
+            return fmc.getCheckboxes(formId, id, ctrl['options']);
+        case "year_range":
+            return fmc.getYearRange(formId, id);
+        case "month_range":
+            return fmc.getMonthRange(formId, id);
+        case "date_range":
+        case "time_range":
+            return fmc.getDateAndTimeRange(formId, id);
+        case "datetime_range":
+        case "datetime_range_group":
+            return fmc.getDateTimeRange(formId, id);
+        case "multi_date_time_range":
+            return fmc.getMultipleDateTimeRange(formId, id);
+        case "date_time":
+            return fmc.getDateTime(formId, id);
+        case "datepicker2":
+            return fmc.getDatepicker2(formId, id, ctrl['mode']);
+        case "datepicker":
+            return fmc.getDatepicker(formId, id);
+        case "timepicker":
+            return fmc.getTimepicker(formId, id);
+        case "multiple":
+            return fmc.getMultiple(formId, id, ctrl['controls']);
+        case "select2":
+            return fmc.getSelect2(formId, id, ctrl['mode']);
+        case "editor":
+            return fmc.getEditor(formId, id);
+        case "file":
+            return fmc.getFile(formId, id);
+        case "uploader":
+            return fmc.getUploader(formId, id);
+        case "uploader2":
+            return fmc.getUploader2(formId, id);
+        case "captcha":
+            return fmc.getCaptcha(formId, id);
+        case "dimension":
+            return fmc.getDimension(formId, id);
+        case "code":
+            return fmc.getCode(formId, id);
+        case "checkbox":
+            return fmc.getCheckbox(formId, id, ctrl['options']);
+        case "radio_tree":
+            return fmc.getRadioTree(formId, id);
+        case "checkbox_tree":
+            return fmc.getCheckboxTree(formId, id, ctrl['options']);
+        case "duration":
+            return fmc.getDuration(formId, id, ctrl['disableDay']);
+        case "tfEditOption":
+            return fmc.gettfEditOption(formId, id);
+        case "selectEditOption":
+            return fmc.getSelectEditOption(formId, id);
+        case "taiwan_city":
+            return fmc.getTaiwanCity(formId, id);
+        default:
+            return { "id": id, "value": null };
+    }
+}
+
+fmc.getInput = function (formId, id) {
+    var value = $("#" + formId).find("[name=" + id + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getInputRange = function (formId, id) {
+    var value_start = $("#" + formId).find("[name=" + id + "_start" + "]").val();
+    var value_end = $("#" + formId).find("[name=" + id + "_end" + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": { "start": value_start, "end": value_end }
+    };
+    return obj;
+}
+
+fmc.getSelect = function (formId, id) {
+    var value = $("#" + formId).find("[name=" + id + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getRadios = function (formId, id) {
+    var value = $("#" + formId).find("[name=" + id + "]:checked").val();
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getCheckboxes = function (formId, id, options) {
+    var multiple = $("#" + formId).find("#" + id);
+
+    var controls = {};
+    $.each(options, function (index, option) {
+        var ctrlId = option['id'];
+        var ctrlValue = null;
+
+        var unchecked_enable = multiple.find("[data-id=" + ctrlId + "]").is(':checked') ? true : false;
+        if (unchecked_enable) {
+            ctrlValue = multiple.find("[data-id=" + ctrlId + "]").val();
+        } else {
+            ctrlValue = multiple.find("[data-id=unchecked-" + ctrlId + "]").val();
+        }
+
+        var ctrlObj = {
+            "id": ctrlId,
+            "value": ctrlValue
+        };
+
+        controls[ctrlId] = ctrlObj;
+    });
+
+    var obj = {
+        "id": id,
+        "value": controls
+    };
+    return obj;
+}
+
+fmc.getYearRange = function (formId, id) {
+    var value_start = $("#" + formId).find("[name=" + id + "_start" + "]").val();
+    var value_end = $("#" + formId).find("[name=" + id + "_end" + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": { "start": value_start, "end": value_end }
+    };
+    return obj;
+}
+
+fmc.getMonthRange = function (formId, id) {
+    var value_start = $("#" + formId).find("[name=" + id + "_start" + "]").val();
+    var value_end = $("#" + formId).find("[name=" + id + "_end" + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": { "start": value_start, "end": value_end }
+    };
+    return obj;
+}
+
+fmc.getDateAndTimeRange = function (formId, id) {
+    var value_start = $("#" + formId).find("[name=" + id + "_start" + "]").val();
+    var value_end = $("#" + formId).find("[name=" + id + "_end" + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": { "start": value_start, "end": value_end }
+    };
+    return obj;
+}
+
+fmc.getDateTimeRange = function (formId, id) {
+    var value_start_date = $("#" + formId).find("[name=" + id + "_start_date" + "]").val();
+    var value_start_time = $("#" + formId).find("[name=" + id + "_start_time" + "]").val();
+    var value_end_date = $("#" + formId).find("[name=" + id + "_end_date" + "]").val();
+    var value_end_time = $("#" + formId).find("[name=" + id + "_end_time" + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": { "start_date": value_start_date, "start_time": value_start_time, "end_date": value_end_date, "end_time": value_end_time }
+    };
+    return obj;
+}
+
+fmc.getDateTime = function (formId, id) {
+    var value_date = $("#" + formId).find("[name=" + id + "_date" + "]").val();
+    var value_time = $("#" + formId).find("[name=" + id + "_time" + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": { "date": value_date, "time": value_time }
+    };
+    return obj;
+}
+
+fmc.getDatepicker = function (formId, id) {
+    var value = $("#" + formId).find("[name=" + id + "_date" + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getDatepicker2 = function (formId, id, mode) {
+    var year = $("#" + formId).find("[name=" + id + "_year]"),
+        month = $("#" + formId).find("[name=" + id + "_month]"),
+        day = $("#" + formId).find("[name=" + id + "_day]"),
+        date = [];
+
+    if (mode == 'Ymd') {
+        date.push(year.val());
+    }
+    date.push(month.val());
+    date.push(day.val());
+
+    var obj = {
+        "id": id,
+        "value": date.join('-')
+    };
+    return obj;
+}
+
+fmc.getTimepicker = function (formId, id) {
+    var value = $("#" + formId).find("[name=" + id + "_time" + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getMultiple = function (formId, id, ctrls) {
+    var multiple = $("#" + formId).find("#" + id);
+
+    var controls = {};
+    $.each(ctrls, function (index, ctrl) {
+        var ctrlType = ctrl['type'];
+        var ctrlId = ctrl['id'];
+        var ctrlValue = null;
+        switch (ctrlType) {
+            case 'select':
+            case 'text':
+            case 'number':
+                ctrlValue = multiple.find("[name=" + ctrlId + "]").val();
+                break;
+            case 'checkbox':
+                var unchecked_enable = multiple.find("[data-id=" + ctrlId + "]").is(':checked') ? true : false;
+                if (unchecked_enable) {
+                    ctrlValue = multiple.find("[data-id=" + ctrlId + "]").val();
+                } else {
+                    ctrlValue = multiple.find("[data-id=unchecked-" + ctrlId + "]").val();
+                }
+                break;
+            case 'select2':
+                if (ctrl['mode'] == 'multiple') {
+                    ctrlValue = multiple.find("[name='" + ctrlId + "[]']").val();
+                }
+                else {
+                    ctrlValue = multiple.find("[name=" + ctrlId + "]").val();
+                }
+                break;
+            default:
+        }
+
+        var ctrlObj = {
+            "id": ctrlId,
+            "value": ctrlValue
+        };
+
+        controls[ctrlId] = ctrlObj;
+    });
+
+    var obj = {
+        "id": id,
+        "value": controls
+    };
+    return obj;
+}
+
+fmc.getSelect2 = function (formId, id, mode) {
+    if (mode == 'multiple') {
+        var value = $("#" + formId).find("[name='" + id + "[]']").val();
+    }
+    else {
+        var value = $("#" + formId).find("[name=" + id + "]").val();
+    }
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getEditor = function (formId, id) {
+    var editor = $("#" + formId).find("[name=" + id + "]").attr('id');
+    var value = getEditorValue(editor);
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getFile = function (formId, id) {
+    var value = $("#" + formId).find("[name=" + id + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getUploader = function (formId, id) {
+    var uploader = $("#" + formId).find("#" + id);
+    var value = $("#" + formId).find("#" + id + "_uploader").val();
+
+    var checkbox = uploader.find("[data-id=" + id + "_checkbox" + "]");
+    if (checkbox.length !== 0) {
+        var unchecked_enable = checkbox.is(':checked') ? true : false;
+        if (unchecked_enable) {
+            value = uploader.find("[data-id=" + id + "_checkbox" + "]").val();
+        } else {
+            value = uploader.find("[data-id=unchecked-" + id + "_checkbox" + "]").val();
+        }
+    }
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getCaptcha = function (formId, id) {
+    var value = $("#" + formId).find("[name='" + id + "']").val();
+    var obj = {
+        "id": id,
+        "value": value
+    }
+    return obj;
+}
+
+fmc.getDimension = function (formId, id) {
+    var value_width = $("#" + formId).find("[name=" + id + "_width" + "]").val();
+    var value_height = $("#" + formId).find("[name=" + id + "_height" + "]").val();
+
+    var obj = {
+        "id": id,
+        "value": { "width": value_width, "height": value_height }
+    };
+    return obj;
+}
+
+fmc.getCode = function (formId, id) {
+    var value = $('#' + formId).find("[name='" + id + "']").val();
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getCheckbox = function (formId, id, options) {
+    var checkbox = $("#" + formId).find("#" + id);
+
+    var controls = [];
+    $.each(options, function (index, option) {
+        var ctrlId = id + "_" + option['id'];
+        var ctrlValue = null;
+
+        var ckecked = checkbox.find("[data-id=" + ctrlId + "]").is(':checked');
+        if (ckecked) {
+            ctrlValue = checkbox.find("[data-id=" + ctrlId + "]").val();
+
+            controls.push(ctrlValue);
+        }
+    });
+
+    var value = controls.join("#");
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getMultipleDateTimeRange = function (formId, id) {
+    var datetimeRange = $("#" + formId).find("#" + id);
+
+    var options = datetimeRange.find('.fs-form-datetime-range-item');
+    var controls = [];
+    $.each(options, function (index, option) {
+        var value_date = $(option).find("[role=" + id + "_date]").val();
+        var value_start = $(option).find("[role=" + id + "_start]").val();
+        var value_end = $(option).find("[role=" + id + "_end]").val();
+        if ($(option).is(":visible")) {
+            if (value_date !== "" || value_start !== "" || value_end !== "") {
+                controls.push({ 'date': value_date, 'start': value_start, 'end': value_end });
+            }
+        }
+    });
+    var obj = {
+        "id": id,
+        "value": controls
+    };
+    return obj;
+}
+
+fmc.getCheckboxTree = function (formId, id, options) {
+    var checkboxTree = $("#" + formId).find("#" + id);
+    var mode = checkboxTree.data('mode');
+    var controls = [];
+    $.each(options, function (index, option) {
+        var ctrlId = id + "_" + option['id'];
+        var ctrlValue = null;
+        var checkbox = checkboxTree.find("[data-id=" + ctrlId + "]");
+        var ckecked = checkbox.is(':checked');
+        var getValue = false;
+
+        if (ckecked) {
+            if (mode == 'applyToChildren') {
+                var parentCheckbox = checkbox.closest('#' + formId + ' #' + id + ' ul').prev('li.checkbox').find('input[type="checkbox"]');
+                if (parentCheckbox.length == 0 || parentCheckbox.is(':checked') === false) {
+                    getValue = true;
+                }
+            } else {
+                getValue = true;
+            }
+        }
+
+        if (getValue) {
+            ctrlValue = checkbox.val();
+
+            controls.push(ctrlValue);
+        }
+    });
+
+    var value = controls.join("#");
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getRadioTree = function (formId, id) {
+    var value = $("#" + formId).find("[name=" + id + "]:checked").val();
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getUploader2 = function (formId, id) {
+    var uploader = $("#" + formId).find("#" + id);
+    var value = $("#" + formId).find("#" + formId + '_' + id + "_uploader").val();
+
+    var checkbox = uploader.find("[data-id=" + id + "_checkbox" + "]");
+    if (checkbox.length !== 0) {
+        var unchecked_enable = checkbox.is(':checked') ? true : false;
+        if (unchecked_enable) {
+            value = uploader.find("[data-id=" + id + "_checkbox" + "]").val();
+        } else {
+            value = uploader.find("[data-id=unchecked-" + id + "_checkbox" + "]").val();
+        }
+    }
+
+    var obj = {
+        "id": id,
+        "value": value
+    };
+    return obj;
+}
+
+fmc.getDuration = function (formId, id, disableDay) {
+    var day = $('#' + formId).find('#' + id + '_day'),
+        hour = $('#' + formId).find('#' + id + '_hour'),
+        minute = $('#' + formId).find('#' + id + '_minute'),
+        obj = {
+            "id": id,
+            "value": {}
+        };
+
+    if (disableDay == 0) {
+        obj.value.day = day.val().trim().replace(/^(0+)([0-9])/, '$2');
+    }
+    obj.value.hour = hour.val().trim().replace(/^(0+)([0-9])/, '$2');
+    obj.value.minute = minute.val().trim().replace(/^(0+)([0-9])/, '$2');
+
+    return obj;
+}
+
+fmc.gettfEditOption = function (formId, id) {
+    var option = {
+        0: $("#" + formId).find("[id=0_" + id + "_text]").val(),
+        1: $("#" + formId).find("[id=1_" + id + "_text]").val()
+    };
+
+    var answer = $("#" + formId).find("[name=" + id + "]:checked").val();
+
+    var obj = {
+        "id": id,
+        "value": {
+            "answer": answer,
+            "option": option
+        }
+    };
+    return obj;
+}
+
+fmc.getSelectEditOption = function (formId, id) {
+    var option = {};
+    var answer = [];
+    var container = $('#' + formId + ' #' + id);
+
+    /* option */
+    container.find('.optionEdit-item').each(function (k, v) {
+        var textInput = $(v).find('input[type="text"]');
+        option[k] = {
+            text: textInput.val().trim(),
+            img: textInput.data('img')
+        };
+    });
+    /* answers */
+    container.find('[name="optionEdit_option"]:checked').each(function (k, v) {
+        answer.push($(v).val());
+    });
+
+    var obj = {
+        "id": id,
+        "value": {
+            "answer": answer,
+            "option": option
+        }
+    };
+    return obj;
+}
+
+fmc.getTaiwanCity = function (formId, id) {
+    var container = $('#' + formId + ' #' + id);
+
+    var obj = {
+        "id": id,
+        "value": {
+            "county": container.find('select[name="' + id + '_county"]').val(),
+            "district": container.find('select[name="' + id + '_district"]').val(),
+            "road": container.find('input[name="' + id + '_road"]').val()
+        }
+    };
+    return obj;
+}
+
+fmc.reload = function (formId, id, control) {
+    var type = $("#" + id).data("type");
+    switch (type) {
+        case "select":
+            return fmc.reloadSelect(formId, id, control);
+    }
+}
+fmc.reloadSelect = function (formId, id, control) {
+    $("#" + formId + " #" + id + " select").html(control);
+}
+
+fmc.bind_checkedCollapse = function (formId) {
+    var formSelector = (formId == undefined) ? 'body' : '#' + formId;
+
+    // init: checked-collapse
+    $(formSelector + ' .checked-collapse').each(function () {
+        var id = $(this).attr("id");
+
+        var toggle = $(formSelector + ' [data-toggle="checked-collapse"][data-target*="#' + id + '"]').filter(function () {
+            var targets = $(this).data('target').split(','),
+                match = false;
+            for (var i = 0; i < targets.length; i++) {
+                if (targets[i].trim() == '#' + id) {
+                    match = true;
+                    break;
+                }
+            }
+            return match;
+        });
+
+        if (toggle.is(':checked')) {  /* checkbox, radio */
+            $(formSelector + ' #' + id).collapse('show');
+        } else if (toggle.is('.image-input-hidden') && toggle.val()) {  /* check fmc::IMAEG hidden input has value or not */
+            $(formSelector + ' #' + id).collapse('show');
+        }
+    });
+
+    var processedName = [];
+    // bind onchange event: radio, checkbox
+    $(formSelector + ' input[data-toggle="checked-collapse"]').each(function () {
+        var type = $(this).attr('type');
+        switch (type) {
+            case 'radio':
+                var name = $(this).attr('name'),
+                    radios = $(formSelector + ' input:radio[name=' + name + ']');
+
+                if (processedName.indexOf(name) == -1) {
+                    radios.change(function () {
+                        var hideTargets = [],
+                            showTargets = [];
+                        radios.each(function () {
+                            var targetId = $(this).data("target");
+                            if (targetId) {
+                                var targetIds = targetId.split(',').map(function (o) { return o.trim(); }),
+                                    action = ($(this).is(':checked')) ? 'show' : 'hide';
+                                targetIds.forEach(function (o) {
+                                    if (action == 'show') {
+                                        if (showTargets.indexOf(o) == -1) {
+                                            showTargets.push(o);
+                                        }
+                                    } else {
+                                        if (hideTargets.indexOf(o) == -1) {
+                                            hideTargets.push(o);
+                                        }
+                                    }
+                                });
+                            }
+                        });
+
+                        var filteredHideTargets = hideTargets.filter(function (o) { return (showTargets.indexOf(o) == -1) });
+                        if (filteredHideTargets.length > 0) {
+                            $(formSelector + ' ' + filteredHideTargets.join(',')).collapse('hide');
+                        }
+                        if (showTargets.length > 0) {
+                            $(formSelector + ' ' + showTargets.join(',')).collapse('show');
+                        }
+                    });
+                    processedName.push(name);
+                }
+                break;
+
+            case 'checkbox':
+                $(this).change(function () {
+                    var targetId = $(this).data("target");
+                    if (targetId) {
+                        if ($(this).is(':checked')) {
+                            $(formSelector + ' ' + targetId).collapse('show');
+                        } else {
+                            var hideTargets = targetId.split(',').map(function (o) { return o.trim(); });
+                            var checkboxes = $(this).closest(formSelector + ' .form-group[data-type="checkbox"]').find('input[type="checkbox"]');
+                            var showTargets = [];
+                            checkboxes.each(function () {
+                                var checkboxTargetId = $(this).data('target');
+                                if ($(this).is(':checked') && checkboxTargetId) {
+                                    var checkboxTargetIds = checkboxTargetId.split(',').map(function (o) { return o.trim(); });
+                                    checkboxTargetIds.forEach(function (o) {
+                                        if (showTargets.indexOf(o) == -1) {
+                                            showTargets.push(o);
+                                        }
+                                    });
+                                }
+                            });
+                            var filteredHideTargets = hideTargets.filter(function (o) { return (showTargets.indexOf(o) == -1) });
+                            if (filteredHideTargets.length > 0) {
+                                $(formSelector + ' ' + filteredHideTargets.join(',')).collapse('hide');
+                            }
+                        }
+                    }
+                });
+                break;
+
+            default:
+                break;
+        }
+    });
+
+    // bind onchange event: select
+    $(formSelector + ' select option[data-toggle="checked-collapse"]').each(function () {
+        var select_name = $(this).closest('select').attr('name');
+        if (processedName.indexOf(select_name) == -1) {
+            $(this).closest('select').change(function () {
+                var hideTargets = [],
+                    showTargets = [];
+                $('option', this).each(function () {
+                    var targetId = $(this).data("target");
+                    if (targetId) {
+                        var targetIds = targetId.split(',').map(function (o) { return o.trim(); }),
+                            action = ($(this).is(':selected')) ? 'show' : 'hide';
+                        targetIds.forEach(function (o) {
+                            if (action == 'show') {
+                                if (showTargets.indexOf(o) == -1) {
+                                    showTargets.push(o);
+                                }
+                            } else {
+                                if (hideTargets.indexOf(o) == -1) {
+                                    hideTargets.push(o);
+                                }
+                            }
+                        });
+                    }
+                });
+
+                var filteredHideTargets = hideTargets.filter(function (o) { return (showTargets.indexOf(o) == -1) });
+                if (filteredHideTargets.length > 0) {
+                    $(formSelector + ' ' + filteredHideTargets.join(',')).collapse('hide');
+                }
+                if (showTargets.length > 0) {
+                    $(formSelector + ' ' + showTargets.join(',')).collapse('show');
+                }
+            });
+            processedName.push(select_name);
+        }
+    });
+
+    // bind onchange event on fmc::IMAGE
+    $(formSelector + ' .form-group[data-type="image"] input[type="hidden"]').change(function () {
+        $(formSelector + ' ' + $(this).data("target")).collapse($(this).val() ? 'show' : 'hide');
+    });
+}
+
+
+
+// *** data-target 裡面的 id 必須是唯一
+fmc.bind_checkedEnable = function (formId) {
+    var isEnabledMap = {};
+    var clearMap = function () {
+        isEnabledMap = {};
+    };
+    var setTargetEnable = function (ctrl) {
+        var target = $(ctrl).data("target");  // selector, ex. "#id1, #id2, ..."
+
+        if (target) {
+            var targetIds = target.split(',').map(function (o) { return o.trim(); });
+            if ($(ctrl).is(':checked')) {
+                targetIds.forEach(function (o) {
+                    isEnabledMap[o] = 1;
+                    $(o).removeClass('fs-disabled');
+                });
+            }
+            else {
+                targetIds.forEach(function (o) {
+                    if (isEnabledMap[o] == 1) {
+                        return;
+                    }
+                    $(o).addClass('fs-disabled');
+                });
+            }
+        }
+    };
+
+    var formSelector = (formId == undefined) ? 'body' : '#' + formId;
+
+    var processedName = [];
+    // radio, checkbox
+    $(formSelector + ' input[data-toggle="checked-enable"]').each(function () {
+        var type = $(this).attr('type');            // <input type=radio/checkbox ...>
+
+        switch (type) {
+            case 'radio':
+                var name = $(this).attr('name'),
+                    radios = $(formSelector + ' input:radio[name=' + name + ']');
+
+                if (processedName.indexOf(name) == -1) {
+                    // init
+                    radios.each(function () {
+                        setTargetEnable(this);
+                    });
+                    clearMap();
+
+                    radios.change(function () {
+                        radios.each(function () {
+                            setTargetEnable(this);
+                        });
+                        clearMap();
+                    });
+                    processedName.push(name);
+                }
+
+                break;
+
+            case 'checkbox':
+                setTargetEnable(this);  // init
+                clearMap();
+                $(this).change(function () {
+                    if ($(this).is(':checked')) {
+                        setTargetEnable(this);
+                    } else {
+                        var checkboxes = $(this).closest(formSelector + ' .form-group[data-type="checkbox"]').find('input[type="checkbox"]');
+                        checkboxes.each(function () {
+                            setTargetEnable(this);
+                        });
+                    }
+                    clearMap();
+                });
+                break;
+
+            default:
+                break;
+        }
+    });
+
+    // select
+    $(formSelector + ' select option[data-toggle="checked-enable"]').each(function () {
+        var select = $(this).closest('select'),
+            options = select.find('option'),
+            select_name = select.attr('name');
+
+        if (processedName.indexOf(select_name) == -1) {
+            // init
+            options.each(function () {
+                setTargetEnable(this);
+            });
+            clearMap();
+
+            select.change(function () {
+                options.each(function () {
+                    setTargetEnable(this);
+                });
+                clearMap();
+            });
+
+            processedName.push(select_name);
+        }
+    });
+}
+
+fmc.bind_inputEnable = function (formId) {
+    var setTargetEnable = function (ctrl) {
+        var target = $(ctrl).data("target");
+
+        if (target) {
+            if ($(ctrl).val().length == 0) {
+                $(target).addClass('fs-disabled');
+            }
+            else {
+                $(target).removeClass('fs-disabled');
+            }
+        }
+    };
+
+    var formSelector = (formId == undefined) ? 'body' : '#' + formId;
+
+    $(formSelector + ' input[data-toggle="input-enable"]').each(function () {
+
+        setTargetEnable(this);
+        $(this).bind('input propertychange', function () {
+            setTargetEnable(this);
+        });
+
+    });
+}

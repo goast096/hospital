@@ -1,0 +1,209 @@
+/* custom style */
+
+html, body, table {
+ font-size:14px ;
+}
+
+/* 背景 */
+@media (min-width: 922px) {
+  body {
+    background-image:url("/sysdata/attach/layout.css//5f723737a908358c545c49737b7da3db.png");
+  }
+}
+
+
+/* 彈跳視窗底色 */
+.body-tmpl-modal,
+.body-tmpl-edit{
+  background-color:white;
+}
+
+
+/* 系統選單 */
+.fs-sysbar.navbar-inverse,
+.fs-mobile-navbar .navbar-inverse {
+  background-color: white;
+  border: none;
+}
+
+.fs-sysbar.navbar-inverse .navbar-brand,
+.fs-sysbar.navbar-inverse .navbar-brand:hover,
+.fs-sysbar.navbar-inverse .navbar-brand:focus,
+.fs-mobile-navbar .navbar-inverse .navbar-brand:hover,
+.fs-mobile-navbar .navbar-inverse .navbar-brand:focus {
+  color:black;
+}
+
+.fs-mobile-navbar .navbar-inverse .navbar-brand,
+.fs-navbar-title a,
+.fs-navbar-btns a {
+  color: white;
+}
+
+.fs-sysbar.navbar-inverse .navbar-nav>li>a {
+  color: #777;
+}
+
+.fs-sysbar.navbar-inverse .navbar-nav>li>a:hover,
+.fs-sysbar.navbar-inverse .navbar-nav>li>a:focus {
+  color: #111;
+  background-color: white;
+}
+
+.fs-sysbar.navbar-inverse .navbar-nav>.open>a,
+.fs-sysbar.navbar-inverse .navbar-nav>.open>a:hover,
+.fs-sysbar.navbar-inverse .navbar-nav>.open>a:focus {
+  color: black;
+  background-color: #FAFAFA;
+}
+
+.fs-sysbar.navbar-inverse .fs-logo {
+  margin-top: -5px;
+}
+
+
+/* Banner */
+.fs-sys-banner {
+  background-color: white;
+  background-image: url("/sysdata/attach/layout.css//f1efdad1a7eba6c14181638f0b8f787f.jpg");
+  padding: 10px;
+  border-bottom: 1px solid #ddd
+}
+
+.fs-banner-title {
+  text-shadow: 2px 4px 3px rgba(0,0,0,0.3);
+}
+
+/* 網站選單 */
+.fs-sitebar {
+  background: linear-gradient(45deg,#68C,#4AE,#8CE);
+}
+
+.fs-sitebar .nav > li > a {
+  color: white;
+  border-bottom-color: transparent;
+}
+
+.fs-sitebar .nav > li > a:hover,
+.fs-sitebar .nav > li > a:focus {
+  background-color: rgba(79, 93, 117,.7);
+}
+
+.fs-nav > ul > li:hover > a {
+  border-bottom-color: transparent;
+}
+
+.fs-sitebar .nav .open > a,
+.fs-sitebar .nav .open > a:hover,
+.fs-sitebar .nav .open > a:focus {
+  background-color: rgba(79, 93, 117,.7);
+  border-bottom-color: transparent;
+}
+
+.fs-mobile-navbar .navbar-inverse .navbar-brand,
+.fs-course-sysbar {
+  background-color: #224;
+  border-color: #224;
+}
+
+.navbar-inverse .navbar-toggle,
+.navbar-inverse .navbar-collapse,
+.navbar-inverse .navbar-form {
+  border-color: transparent;
+}
+
+.navbar-inverse .navbar-toggle:hover,
+.navbar-inverse .navbar-toggle:focus {
+  background-color: transparent;
+}
+
+.fs-mobile-navbar .navbar-inverse {
+  background-color:#224;
+}
+
+.fs-mobile-navbar .navbar-inverse .navbar-brand:hover {
+  color: white;
+}
+
+.fs-sitebar .fs-nav > ul > li.active > a,
+.fs-sitebar .fs-nav > ul > li.active > a:focus {
+  color: #fff;
+  border-color:transparent;
+}
+
+.fs-sitebar .fs-nav > ul > li.active:hover > a {
+  background-color: rgba(79, 93, 117,.7);
+}
+ 
+
+
+/* 按鈕 */
+.btn-primary {
+  background-color: #68C;
+  border-color: #68C;
+}
+
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: #458;
+  border-color: #458;
+}
+
+.btn-primary:hover {
+  background-color: #56A;
+  border-color: #56A;
+}
+
+.btn-primary:active:hover,
+.btn-primary.active:hover,
+.open > .dropdown-toggle.btn-primary:hover,
+.btn-primary:active:focus,
+.btn-primary.active:focus,
+.open > .dropdown-toggle.btn-primary:focus,
+.btn-primary:active.focus,
+.btn-primary.active.focus,
+.open > .dropdown-toggle.btn-primary.focus{
+  background-color: #458;
+  border-color: #458;
+}
+
+
+/* 側欄 */
+.nav > li > a:hover,
+.nav > li > a:focus,
+.fs-thumblist .curr {
+  background-color: #f5f5f5;
+}
+
+
+/* 表格 */
+.fs-table .table.custom,
+tbody {
+  border-top-color: #4AE;
+  border-top-width: 3px;
+  border-bottom-color: #ddd;
+}
+
+.fs-th {
+  background-color: #EEE;
+}
+
+
+/* filterEX */
+.filter {
+  border-color: transparent;
+}
+
+
+/* 下拉式選單 */
+.dropdown-menu > li > a:hover,
+.dropdown-menu > li > a:focus {
+  background-color: #f5f5f5;
+}
+
+/* 媒體 */
+#fs-media-content {
+ background-color: #fff;
+ border: solid 1px #ddd;
+ padding: 20px;
+}
